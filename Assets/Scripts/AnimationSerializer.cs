@@ -22,9 +22,9 @@ public class AnimationSerializer : MonoBehaviour
     void OnGUI()
     {
         // Make a background box
-        GUI.Box(new Rect(0, 0, 100, 50), "Processing Info");
-        GUI.Label(new Rect(10, 30, 100, 20), "Processing Clips : " + processingTotalClipProgressStr + " (" + processingUIClipsPercentage + ")");
-        GUI.Label(new Rect(40, 30, 100, 20), "Clip Progress : " + processingUIClipProgressStr);
+        GUI.Box(new Rect(10, 10, 300, 100), "Processing Info");
+        GUI.Label(new Rect(20, 40, 280, 100), "Processing Clips : " + processingTotalClipProgressStr + " (" + processingUIClipsPercentage + ")");
+        GUI.Label(new Rect(20, 60, 280, 150), "Clip Progress : " + processingUIClipProgressStr);
     }
     IEnumerator ExportAnimations()
     {
@@ -63,7 +63,7 @@ public class AnimationSerializer : MonoBehaviour
                 if (Time.realtimeSinceStartup - processingStartTime > 1 / 60f)
                 {
                     processingUIClipProgressStr = $"{time:F0}/{length:F0} seconds";
-                    float progress = (clips.IndexOf(clip) + 1) / clips.Count() + time / length / clips.Count();
+                    float progress = clips.IndexOf(clip) / clips.Count() + time / length / clips.Count();
                     processingUIClipsPercentage = $"{progress * 100:F2}%";
 
                     yield return null;
