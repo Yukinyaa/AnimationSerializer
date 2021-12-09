@@ -61,3 +61,11 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+
+# Confidential Animations and Avatar assets (Leave folder for )
+[Aa]ssets/Animations/**/*
+![Aa]ssets/Animations/
+![Aa]ssets/Animations/[Rr]ead[Mm]e.*
+[Aa]ssets/Avatar/**/*
+![Aa]ssets/Avatar/
+![Aa]ssets/Avatar/[Rr]ead[Mm]e.*
