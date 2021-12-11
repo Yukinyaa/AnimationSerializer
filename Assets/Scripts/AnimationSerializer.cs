@@ -21,7 +21,7 @@ public class AnimationSerializer : MonoBehaviour
 
     void Start()
     {
-        SerializeHelper.TestRotateZXY();
+        Vector3Serializables.TestRotateZXY();
         StartCoroutine(ExportAnimations());
     }
 
@@ -54,9 +54,8 @@ public class AnimationSerializer : MonoBehaviour
         float headheightFromFloor = anim.GetBoneTransform(HumanBodyBones.Head).position.y - floorheight; //  make sure that model is at upright position
 
         //normalize model height to 
-        transform.localScale /= headheightFromFloor;
 
-        TransformSnapshotTaker snapshotTaker = new TransformSnapshotTaker(Vector3.one * headheightFromFloor, anim);
+        TransformSnapshotTaker snapshotTaker = new TransformSnapshotTaker(Vector3.one, anim);
 
         foreach (var clip in clips)
         {
@@ -64,16 +63,18 @@ public class AnimationSerializer : MonoBehaviour
             float length = clip.length;
             float processingStartTime = Time.realtimeSinceStartup;
 
+            processingTotalClipProgressStr = $"{clips.IndexOf(clip) + 1} / {clips.Count()}({clip.name})";
+
             for (float time = 0; time <= length; time += secondsPerFrame)
             {
                 clip.SampleAnimation(this.gameObject, time);
+
                 transform.position = Vector3.zero;
                 transform.localScale = Vector3.one;
                 //transform.rotation = Quaternion.identity;
                 snapshotTaker.TakeSnapshot();
 
 
-                processingTotalClipProgressStr = $"{clips.IndexOf(clip) + 1} / {clips.Count()}({clip.name})";
 
                 if (Time.realtimeSinceStartup - processingStartTime > 1 / 60f)
                 {

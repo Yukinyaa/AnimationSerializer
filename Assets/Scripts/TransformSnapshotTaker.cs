@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json;
-using static SerializeHelper;
+using static Vector3Serializables;
 
 public class TransformSnapshotTaker
 {
@@ -30,6 +30,8 @@ public class TransformSnapshotTaker
         foreach (var tuple in transformTuples)
         {
             var scaledLocalPosition = tuple.Item2.localPosition;
+            if (ReferenceEquals(tuple.Item2, rootJoint))
+                scaledLocalPosition = Vector3.zero;
             var rescaledLocalPosition = Vector3.Scale(scaledLocalPosition, scale);
 
             localPositions.Add(tuple.Item1, (Vector3Serializable)rescaledLocalPosition);
@@ -47,12 +49,14 @@ public class TransformSnapshotTaker
                         ("Chest", humanoidAvatar.GetBoneTransform(HumanBodyBones.Chest)),
                             ("Neck", humanoidAvatar.GetBoneTransform(HumanBodyBones.Neck)),
                                 ("Head", humanoidAvatar.GetBoneTransform(HumanBodyBones.Head)),
-                            ("LeftShoulder", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftUpperArm)),
-                                ("LeftElbow", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftLowerArm)),
-                                    ("LeftWrist", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftHand)),
-                            ("RightShoulder", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightUpperArm)),
-                                ("RightElbow", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightLowerArm)),
-                                    ("RightWrist", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightHand)))
+                            ("LeftCollar", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftShoulder)),
+                                ("LeftShoulder", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftUpperArm)),
+                                    ("LeftElbow", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftLowerArm)),
+                                        ("LeftWrist", humanoidAvatar.GetBoneTransform(HumanBodyBones.LeftHand)),
+                            ("RightCollar", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightShoulder)),
+                                ("RightShoulder", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightUpperArm)),
+                                    ("RightElbow", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightLowerArm)),
+                                        ("RightWrist", humanoidAvatar.GetBoneTransform(HumanBodyBones.RightHand)))
     {
     }
 
@@ -63,13 +67,15 @@ public class TransformSnapshotTaker
         foreach (var elem in transforms)
         {
             string key = elem.Key;
-            Vector3Serializable pos = (Vector3Serializable)Vector3.Scale(elem.Value.position, scale);
+            Vector3Serializable realPos = (Vector3Serializable)Vector3.Scale(elem.Value.position - rootJoint.position, scale);
             Vector3Serializable angle = (Vector3Serializable)(elem.Value.localRotation.eulerAngles * Mathf.Deg2Rad);
-            if (elem.Value == rootJoint)
+            if (ReferenceEquals(elem.Value, rootJoint))
             {
-                 angle = (Vector3Serializable)(elem.Value.rotation.eulerAngles * Mathf.Deg2Rad);
+                angle = (Vector3Serializable)(elem.Value.rotation.eulerAngles * Mathf.Deg2Rad);
+                realPos = Vector3Serializable.zero;
             }
-            frame.Add(key, (pos, angle));
+            //Debug.Log($"{key}, {realPos}, {angle}");
+            frame.Add(key, (realPos, angle));
         }
         snapshots.Add(frame);
         TestForwardKinematics(frame);
@@ -90,51 +96,56 @@ public class TransformSnapshotTaker
         public FKTester ApplyTransform(string jointName)
         {
             Position = RotateZXY(Position, frame[jointName].Item2);
-            Position -= localPositions[jointName];
+            //Debug.Log($"{Position}+{localPositions[jointName]} = {Position + localPositions[jointName]}");
+            Position += localPositions[jointName];
 
             return this;
         }
         public float DiffWith(string jointName)
         {
-            float diff = ((Vector3)Position - (Vector3)frame["LeftWrist"].Item1).magnitude;
+            float diff = ((Vector3)Position - (Vector3)frame[jointName].Item1).magnitude;
             return diff;
         }
         public void AssertDiffWith(string jointName, float tolerance)
         {
             float diff = DiffWith(jointName);
-            Debug.Assert(diff < tolerance, 
-@$"FK {jointName} sol diff > 0.1 ({diff})
-Calculated: {(Vector3)Position}, Original: {(Vector3)frame["LeftWrist"].Item1}");
+
+// Debug.Log(
+            Debug.Assert(diff < tolerance,
+@$"FK {jointName} sol {tolerance} < diff({diff:F7}, {Position - frame[jointName].Item1})
+Calculated: {Position}, Original: {frame[jointName].Item1}");
         }
 
     }
 
     void TestForwardKinematics(Dictionary<string, (Vector3Serializable, Vector3Serializable)> frame)
     {
-        new FKTester(localPositions["Spine"] ,frame, localPositions)
-            .ApplyTransform("Pelvis").AssertDiffWith("Spine", 0.1f);
-
-        new FKTester(localPositions["LeftWrist"], frame, localPositions)
-            .ApplyTransform("LeftElbow")
-            .ApplyTransform("Chest")
-            .ApplyTransform("LeftShoulder")
-            .ApplyTransform("Spine")
-            .ApplyTransform("Pelvis").AssertDiffWith("LeftWrist", 0.1f);
-
-
-        new FKTester(localPositions["RightWrist"], frame, localPositions)
-            .ApplyTransform("RightElbow")
-            .ApplyTransform("Chest")
-            .ApplyTransform("RightShoulder")
-            .ApplyTransform("Spine")
-            .ApplyTransform("Pelvis").AssertDiffWith("RightWrist", 0.1f);
-
-
         new FKTester(localPositions["Head"], frame, localPositions)
             .ApplyTransform("Neck")
             .ApplyTransform("Chest")
             .ApplyTransform("Spine")
             .ApplyTransform("Pelvis").AssertDiffWith("Head", 0.1f);
+
+        new FKTester(Vector3Serializable.zero, frame, localPositions)
+            .ApplyTransform("LeftWrist")
+            .ApplyTransform("LeftElbow")
+            .ApplyTransform("LeftShoulder")
+            .ApplyTransform("LeftCollar")
+            .ApplyTransform("Chest")
+            .ApplyTransform("Spine")
+            .ApplyTransform("Pelvis").AssertDiffWith("LeftWrist", 0.1f);
+
+
+        new FKTester(Vector3Serializable.zero, frame, localPositions)
+            .ApplyTransform("RightWrist")
+            .ApplyTransform("RightElbow")
+            .ApplyTransform("RightShoulder")
+            .ApplyTransform("RightCollar")
+            .ApplyTransform("Chest")
+            .ApplyTransform("Spine")
+            .ApplyTransform("Pelvis").AssertDiffWith("RightWrist", 0.1f);
+
+
     }
 
 }
