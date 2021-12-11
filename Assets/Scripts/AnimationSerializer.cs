@@ -11,24 +11,36 @@ public class AnimationSerializer : MonoBehaviour
 {
     Animator anim = null;
     public List<AnimatorController> animatorControllers;
+    
 
-    bool isProcessing;
+    bool isProcessing = false;
     
     string processingTotalClipProgressStr;
     string processingUIClipProgressStr;
     string processingUIClipsPercentage;
 
+    void Start()
+    {
+        SerializeHelper.TestRotateZXY();
+        StartCoroutine(ExportAnimations());
+    }
 
     void OnGUI()
     {
-        // Make a background box
-        GUI.Box(new Rect(10, 10, 300, 100), "Processing Info");
-        GUI.Label(new Rect(20, 40, 280, 100), "Processing Clips : " + processingTotalClipProgressStr + " (" + processingUIClipsPercentage + ")");
-        GUI.Label(new Rect(20, 60, 280, 150), "Clip Progress : " + processingUIClipProgressStr);
+        if (isProcessing)
+        {
+            // Make a background box
+            GUI.Box(new Rect(10, 10, 300, 100), "Processing Info");
+            GUI.Label(new Rect(20, 40, 280, 20), "Processing Clips : " + processingTotalClipProgressStr + " (" + processingUIClipsPercentage + ")");
+            GUI.Label(new Rect(20, 70, 280, 20), "Clip Progress : " + processingUIClipProgressStr);
+        }
     }
+
     IEnumerator ExportAnimations()
     {
+        isProcessing = true;
         transform.position = Vector3.zero;
+        transform.localScale = Vector3.one;
         transform.rotation = Quaternion.identity;
 
         FindAnimator();
@@ -55,22 +67,25 @@ public class AnimationSerializer : MonoBehaviour
             for (float time = 0; time <= length; time += secondsPerFrame)
             {
                 clip.SampleAnimation(this.gameObject, time);
+                transform.position = Vector3.zero;
+                transform.localScale = Vector3.one;
+                //transform.rotation = Quaternion.identity;
                 snapshotTaker.TakeSnapshot();
 
 
-                processingTotalClipProgressStr = $"{clips.IndexOf(clip) + 1} / {clips.Count()}";
+                processingTotalClipProgressStr = $"{clips.IndexOf(clip) + 1} / {clips.Count()}({clip.name})";
 
                 if (Time.realtimeSinceStartup - processingStartTime > 1 / 60f)
                 {
                     processingUIClipProgressStr = $"{time:F0}/{length:F0} seconds";
-                    float progress = clips.IndexOf(clip) / clips.Count() + time / length / clips.Count();
+                    float progress = (clips.IndexOf(clip)) / clips.Count() + time / length / clips.Count();
                     processingUIClipsPercentage = $"{progress * 100:F2}%";
 
                     yield return null;
                 }
             }
         }
-        
+        isProcessing = false;
         Debug.Log(snapshotTaker.Serialize());
     }
 
@@ -92,10 +107,6 @@ public class AnimationSerializer : MonoBehaviour
         return clips;
     }
 
-    void Start()
-    {
-        StartCoroutine(ExportAnimations()); 
-    }
     void FindAnimator()
     {
         if (anim == null) anim = GetComponent<Animator>();
@@ -106,12 +117,5 @@ public class AnimationSerializer : MonoBehaviour
         var avatar = anim?.avatar;
         Debug.Assert(avatar != null);
         Debug.Assert(avatar.isHuman);
-    }
-
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }
