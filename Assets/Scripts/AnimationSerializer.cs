@@ -87,7 +87,8 @@ public class AnimationSerializer : MonoBehaviour
             }
         }
         isProcessing = false;
-        Debug.Log(snapshotTaker.Serialize());
+        Debug.Log(snapshotTaker.SerializePositions());
+        Debug.Log(snapshotTaker.SerializeSnapshots());
     }
 
     private List<AnimationClip> FindAnimationClipsFromAnimatorControllers()

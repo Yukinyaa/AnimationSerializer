@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using static UnityEngine.Mathf;
-static class Vector3Serializables
+public static class Vector3Serializables
 {
     public struct Vector3Serializable
     {
