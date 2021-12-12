@@ -87,8 +87,18 @@ public class AnimationSerializer : MonoBehaviour
             }
         }
         isProcessing = false;
-        Debug.Log(snapshotTaker.SerializePositions());
-        Debug.Log(snapshotTaker.SerializeSnapshots());
+        var pospath = EditorUtility.SaveFilePanel("Save Position.json", "", "Position.json", "json");
+        var snppath = EditorUtility.SaveFilePanel("Save Snapshot.json", "", "Snapshot.json", "json");
+        if (pospath.Length != 0 && snppath.Length != 0)
+        {
+            System.IO.File.WriteAllText(pospath, snapshotTaker.SerializePositions());
+            Debug.Log("Finished Saving Positions!");
+
+            System.IO.File.WriteAllText(snppath, snapshotTaker.SerializeSnapshots());
+            Debug.Log("Finished Saving Snapshots!");
+        }
+        else
+            Debug.LogWarning("Invalid position!");
     }
 
     private List<AnimationClip> FindAnimationClipsFromAnimatorControllers()
