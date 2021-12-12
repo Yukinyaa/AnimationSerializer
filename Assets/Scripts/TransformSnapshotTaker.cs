@@ -11,20 +11,31 @@ public class TransformSnapshotTaker
 {
     Dictionary<string, Transform> transforms;
     Dictionary<string, Vector3Serializable> localPositions;
-    List<Dictionary<string, (Vector3Serializable, Vector3Serializable)>> snapshots;
+    List<Dictionary<string, (Vector3Serializable, Vector3Serializable, Vector3Serializable)>> snapshots;
     Transform rootJoint;
     public int Count => snapshots.Count;
     Vector3 scale;
     private Vector3 vector3;
 
-    public string SerializeSnapshots() => JsonConvert.SerializeObject(snapshots);
-    public string SerializePositions() => JsonConvert.SerializeObject(localPositions);
-
+    public string SerializeSnapshots() =>
+        JsonConvert.SerializeObject(
+                from snapshot in snapshots select 
+                    snapshot.ToDictionary(
+                        pair => pair.Key, 
+                        pair => new List<float> { 
+                            pair.Value.Item1.x, pair.Value.Item1.y, pair.Value.Item1.z,
+                            pair.Value.Item2.x, pair.Value.Item2.y, pair.Value.Item2.z,
+                            pair.Value.Item3.x, pair.Value.Item3.y, pair.Value.Item3.z
+                        }
+                    )
+            );
+    public string SerializePositions() => 
+        JsonConvert.SerializeObject(localPositions.ToDictionary(k => k.Key, v => new List<float> { v.Value.x, v.Value.y, v.Value.z }));
 
     TransformSnapshotTaker(Vector3 scale, Transform rootJoint, params (string, Transform)[] transformTuples)
     {
         transforms = new Dictionary<string, Transform>();
-        snapshots = new List<Dictionary<string, (Vector3Serializable, Vector3Serializable)>>();
+        snapshots = new List<Dictionary<string, (Vector3Serializable, Vector3Serializable, Vector3Serializable)>>();
         localPositions = new Dictionary<string, Vector3Serializable>();
         this.rootJoint = rootJoint;
 
@@ -63,20 +74,21 @@ public class TransformSnapshotTaker
 
     public void TakeSnapshot()
     {
-        var frame = new Dictionary<string, (Vector3Serializable, Vector3Serializable)>();
+        var frame = new Dictionary<string, (Vector3Serializable, Vector3Serializable, Vector3Serializable)>();
         
         foreach (var elem in transforms)
         {
             string key = elem.Key;
             Vector3Serializable realPos = (Vector3Serializable)Vector3.Scale(elem.Value.position - rootJoint.position, scale);
             Vector3Serializable angle = (Vector3Serializable)(elem.Value.localRotation.eulerAngles * Mathf.Deg2Rad);
+            Vector3Serializable globalAngle = (Vector3Serializable)(elem.Value.rotation.eulerAngles * Mathf.Deg2Rad);
             if (ReferenceEquals(elem.Value, rootJoint))
             {
                 angle = (Vector3Serializable)(elem.Value.rotation.eulerAngles * Mathf.Deg2Rad);
                 realPos = Vector3Serializable.zero;
             }
             //Debug.Log($"{key}, {realPos}, {angle}");
-            frame.Add(key, (realPos, angle));
+            frame.Add(key, (realPos, angle, globalAngle));
         }
         snapshots.Add(frame);
         FKTester.TestForwardKinematics(frame, localPositions);

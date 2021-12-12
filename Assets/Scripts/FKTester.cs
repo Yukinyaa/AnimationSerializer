@@ -4,11 +4,11 @@ using static Vector3Serializables;
 
 public class FKTester
 {
-    Dictionary<string, (Vector3Serializable, Vector3Serializable)> frame;
+    Dictionary<string, (Vector3Serializable, Vector3Serializable, Vector3Serializable)> frame;
     Dictionary<string, Vector3Serializable> localPositions;
     public Vector3Serializable Position { get; private set; } = Vector3Serializable.zero;
 
-    public FKTester(Vector3Serializable pos, Dictionary<string, (Vector3Serializable, Vector3Serializable)> frame, Dictionary<string, Vector3Serializable> localPositions)
+    public FKTester(Vector3Serializable pos, Dictionary<string, (Vector3Serializable, Vector3Serializable, Vector3Serializable)> frame, Dictionary<string, Vector3Serializable> localPositions)
         => (Position, this.frame, this.localPositions) = (pos, frame, localPositions);
 
     public FKTester ApplyTransform(string jointName)
@@ -34,7 +34,7 @@ public class FKTester
 Calculated: {Position}, Original: {frame[jointName].Item1}");
     }
 
-    public static void TestForwardKinematics(Dictionary<string, (Vector3Serializable, Vector3Serializable)> frame, Dictionary<string, Vector3Serializable> localPositions)
+    public static void TestForwardKinematics(Dictionary<string, (Vector3Serializable, Vector3Serializable, Vector3Serializable)> frame, Dictionary<string, Vector3Serializable> localPositions)
     {
         new FKTester(localPositions["Head"], frame, localPositions)
             .ApplyTransform("Neck")

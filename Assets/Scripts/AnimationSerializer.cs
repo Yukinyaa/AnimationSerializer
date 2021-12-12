@@ -11,7 +11,7 @@ public class AnimationSerializer : MonoBehaviour
 {
     Animator anim = null;
     public List<AnimatorController> animatorControllers;
-    
+    public List<AnimationClip> animations;
 
     bool isProcessing = false;
     
@@ -114,6 +114,11 @@ public class AnimationSerializer : MonoBehaviour
                 if (!clips.Exists(a => a == clip))
                     clips.Add(clip);
             }
+        }
+        foreach (var clip in animations)
+        {
+            if (!clips.Exists(a => a == clip))
+                clips.Add(clip);
         }
 
         return clips;
